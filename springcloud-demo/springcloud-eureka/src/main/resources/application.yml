@@ -1,0 +1,15 @@
+server:
+  port: 8888
+eureka:
+  instance:
+    hostname: cloud-eureka
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://cloudmap:cloudmap@localhost:8888/eureka/
+spring:
+  security:
+    user:
+      name: cloudmap
+      password: cloudmap

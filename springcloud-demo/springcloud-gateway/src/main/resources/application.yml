@@ -1,0 +1,54 @@
+server:
+  port: 1111
+spring:
+  application:
+    name: cloud-gateway
+  mvc:
+    throw-exception-if-no-handler-found: true  #出现404错误，直接抛出异常
+  resources:
+    add-mappings: false
+eureka:
+  client:
+    service-url:
+      defaultZone: http://cloudmap:cloudmap@localhost:8888/eureka/
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 2  #设置心跳时间间隔
+    lease-expiration-duration-in-seconds: 5  #超过5秒即熔断
+    ip-address: 192.168.2.14
+
+#自定义路由映射
+zuul:
+  prefix: /api
+  routes:
+    cloud-consumer:  #spring.application.name
+#      path: /consumer1/**
+      serviceId: cloud-consumer
+    cloud-producer:
+#      path: /producer/**
+      serviceId: cloud-producer
+  #统一入口，忽略其他入口
+#  ignored-patterns: /cloud-*/**
+  host:
+    connect-timeout-millis: 3000
+    socket-timeout-millis: 3000
+  #过滤器是否禁用
+  GatewayFilter:
+    pre:
+      disable: false
+  IpFilter:
+    pre:
+      disable: false
+  retryable: true  #开启重试机制
+
+#ribbon负载配置  zuul容错配置
+ribbon:
+  connectTimeout: 500 #请求连接的超时时间
+  readTimeout: 5000 #处理的超时时间
+  maxAutoRetries: 1  #当前实例的重试次数
+  maxAutoRetriesNextServer: 3  #切换实例的重试次数
+  okToRetryOnAllOperations: true #对所有的请求都进行重试
+  retryableStatusCodes: 500,404,502  #执行重试的状态码
+
