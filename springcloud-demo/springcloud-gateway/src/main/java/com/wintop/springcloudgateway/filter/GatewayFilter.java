@@ -4,11 +4,17 @@ import com.netflix.zuul.ZuulFilter;
 import com.netflix.zuul.context.RequestContext;
 import com.netflix.zuul.exception.ZuulException;
 import com.wintop.springcloudgateway.entity.Result;
+import com.wintop.springcloudgateway.init.service.TokenService;
 import org.apache.commons.lang.StringUtils;
 import com.alibaba.fastjson.JSONObject;
+import org.springframework.beans.factory.annotation.Autowired;
+
 import javax.servlet.http.HttpServletRequest;
 
 public class GatewayFilter extends ZuulFilter {
+    @Autowired
+    private TokenService tokenService;
+
     @Override
     public String filterType() {
         return "pre";
@@ -28,23 +34,27 @@ public class GatewayFilter extends ZuulFilter {
 
     @Override
     public Object run() throws ZuulException {
-        //处理过滤逻辑
-        RequestContext context = RequestContext.getCurrentContext();
-        HttpServletRequest request = context.getRequest();
-        String token = request.getHeader("token");
-        if (StringUtils.isBlank(token) && !"123456".equals(token)){
-            //无权限
-            //不需要路由到后端服务
-            context.setSendZuulResponse(false);
-            //真正不转发请求
-            //context.set("sendForwardFilter.ran",true);
-            context.setResponseBody(String.valueOf(JSONObject.toJSON(Result.error(403,"token无效"))));
-            context.getResponse().setContentType("application/json;charset=utf-8");
-            //告诉之后的过滤器 不再向下执行
-            context.set("isSuccess",false);
-            return null;
-        }else{
-            context.set("isSuccess",true);
+        try {
+            //处理过滤逻辑
+            RequestContext context = RequestContext.getCurrentContext();
+            HttpServletRequest request = context.getRequest();
+            String token = request.getHeader("token");
+            if (StringUtils.isBlank(token) || tokenService.selectToken(token)==null){
+                //无权限
+                //不需要路由到后端服务
+                context.setSendZuulResponse(false);
+                //真正不转发请求
+                //context.set("sendForwardFilter.ran",true);
+                context.setResponseBody(String.valueOf(JSONObject.toJSON(Result.error(403,"token无效"))));
+                context.getResponse().setContentType("application/json;charset=utf-8");
+                //告诉之后的过滤器 不再向下执行
+                context.set("isSuccess",false);
+                return null;
+            }else{
+                context.set("isSuccess",true);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
     }
